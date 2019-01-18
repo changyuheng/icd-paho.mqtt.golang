@@ -536,7 +536,7 @@ func (c *client) Publish(topic string, qos byte, retained bool, payload interfac
 		token.err = ErrNotConnected
 		token.flowComplete()
 		return token
-	case c.connectionStatus() == reconnecting && qos == 0:
+	case c.connectionStatus() < connected && qos == 0:
 		token.flowComplete()
 		return token
 	}
