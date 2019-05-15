@@ -238,7 +238,22 @@ func (c *client) Connect() Token {
 					cm.ProtocolName = "MQTT"
 					cm.ProtocolVersion = 4
 				}
-				cm.Write(c.conn)
+
+				if c.options.ConnectTimeout > 0 {
+					c.conn.SetWriteDeadline(time.Now().Add(c.options.ConnectTimeout))
+				}
+
+				err = cm.Write(c.conn)
+				if err != nil {
+					ERROR.Println(CLI, "Connecting to", broker, "CONNECT cannot be sent")
+					continue
+				}
+
+				if c.options.ConnectTimeout > 0 {
+					// If we successfully wrote, we don't want the timeout to happen during an idle period
+					// so we reset it to infinite.
+					c.conn.SetWriteDeadline(time.Time{})
+				}
 
 				rc = c.connect()
 				if rc != packets.Accepted {
@@ -353,7 +368,22 @@ func (c *client) reconnect() {
 					cm.ProtocolName = "MQTT"
 					cm.ProtocolVersion = 4
 				}
-				cm.Write(c.conn)
+
+				if c.options.ConnectTimeout > 0 {
+					c.conn.SetWriteDeadline(time.Now().Add(c.options.ConnectTimeout))
+				}
+
+				err = cm.Write(c.conn)
+				if err != nil {
+					ERROR.Println(CLI, "Connecting to", broker, "CONNECT cannot be sent")
+					continue
+				}
+
+				if c.options.ConnectTimeout > 0 {
+					// If we successfully wrote, we don't want the timeout to happen during an idle period
+					// so we reset it to infinite.
+					c.conn.SetWriteDeadline(time.Time{})
+				}
 
 				rc = c.connect()
 				if rc != packets.Accepted {
@@ -420,7 +450,7 @@ func (c *client) reconnect() {
 func (c *client) connect() byte {
 	DEBUG.Println(NET, "connect started")
 
-	ca, err := packets.ReadPacket(c.conn)
+	ca, err := packets.ReadPacketTimeout(c.conn, c.options.ConnectTimeout)
 	if err != nil {
 		ERROR.Println(NET, "connect got error", err)
 		return packets.ErrNetworkError
