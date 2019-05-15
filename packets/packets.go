@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"time"
 )
 
 //ControlPacket defines the interface for structs intended to hold
@@ -116,6 +118,51 @@ func ReadPacket(r io.Reader) (cp ControlPacket, err error) {
 	if err != nil {
 		return nil, err
 	}
+	if n != fh.RemainingLength {
+		return nil, errors.New("Failed to read expected data")
+	}
+
+	err = cp.Unpack(bytes.NewBuffer(packetBytes))
+	return cp, err
+}
+
+//ReadPacketTimeout takes instances of an net.Conn and an time.Duration(timeout) and attempts
+//to read an MQTT packet from the stream. It returns a ControlPacket
+//representing the decoded MQTT packet and an error. One of these returns will
+//always be nil, a nil ControlPacket indicating an error occurred.
+func ReadPacketTimeout(r net.Conn, timeout time.Duration) (cp ControlPacket, err error) {
+	var fh FixedHeader
+	b := make([]byte, 1)
+
+	if timeout > 0 {
+		r.SetReadDeadline(time.Now().Add(timeout))
+	}
+	_, err = io.ReadFull(r, b)
+	if err != nil {
+		return nil, err
+	}
+	fh.unpack(b[0], r)
+	cp = NewControlPacketWithHeader(fh)
+	if cp == nil {
+		return nil, errors.New("Bad data from client")
+	}
+
+	if timeout > 0 {
+		r.SetReadDeadline(time.Now().Add(timeout))
+	}
+
+	packetBytes := make([]byte, fh.RemainingLength)
+	n, err := io.ReadFull(r, packetBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	if timeout > 0 {
+		// If we successfully read, we don't want the timeout to happen during an idle period
+		// so we reset it to infinite.
+		r.SetReadDeadline(time.Time{})
+	}
+
 	if n != fh.RemainingLength {
 		return nil, errors.New("Failed to read expected data")
 	}
