@@ -65,6 +65,7 @@ type ClientOptions struct {
 	PingTimeout             time.Duration
 	ConnectTimeout          time.Duration
 	MaxReconnectInterval    time.Duration
+	MaxPreReconnectInterval time.Duration
 	AutoReconnect           bool
 	Store                   Store
 	DefaultPublishHandler   MessageHandler
@@ -104,6 +105,7 @@ func NewClientOptions() *ClientOptions {
 		PingTimeout:             10 * time.Second,
 		ConnectTimeout:          30 * time.Second,
 		MaxReconnectInterval:    10 * time.Minute,
+		MaxPreReconnectInterval: 0,
 		AutoReconnect:           true,
 		Store:                   nil,
 		OnConnect:               nil,
@@ -304,6 +306,13 @@ func (o *ClientOptions) SetConnectTimeout(t time.Duration) *ClientOptions {
 // when connection is lost
 func (o *ClientOptions) SetMaxReconnectInterval(t time.Duration) *ClientOptions {
 	o.MaxReconnectInterval = t
+	return o
+}
+
+// SetMaxPreReconnectInterval sets the rand(0, maximum time) that will be waited before first reconnection attempt
+// when connection is lost
+func (o *ClientOptions) SetMaxPreReconnectInterval(t time.Duration) *ClientOptions {
+	o.MaxPreReconnectInterval = t
 	return o
 }
 

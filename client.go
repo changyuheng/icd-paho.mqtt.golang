@@ -20,6 +20,7 @@ package mqtt
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -142,6 +143,7 @@ func NewClient(o *ClientOptions) Client {
 	if !c.options.AutoReconnect {
 		c.options.MessageChannelDepth = 0
 	}
+	rand.Seed(time.Now().UnixNano())
 	return c
 }
 
@@ -359,6 +361,10 @@ func (c *client) reconnect() {
 		rc    = byte(1)
 		sleep = time.Duration(1 * time.Second)
 	)
+
+	if c.options.MaxPreReconnectInterval != 0 {
+		time.Sleep(time.Duration(rand.Int63n(int64(c.options.MaxPreReconnectInterval))))
+	}
 
 	for rc != 0 && c.status != disconnected {
 		cm := newConnectMsgFromOptions(&c.options)
