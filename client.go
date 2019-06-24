@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"strings"
 	"sync"
@@ -149,6 +150,7 @@ func NewClient(o *ClientOptions) Client {
 	c.msgRouter.setDefaultHandler(c.options.DefaultPublishHandler)
 	c.obound = make(chan *PacketAndToken)
 	c.oboundP = make(chan *PacketAndToken)
+	rand.Seed(time.Now().UnixNano())
 	return c
 }
 
@@ -288,6 +290,10 @@ func (c *client) reconnect() {
 		sleep = time.Duration(1 * time.Second)
 		conn  net.Conn
 	)
+
+	if c.options.MaxPreReconnectInterval != 0 {
+		time.Sleep(time.Duration(rand.Int63n(int64(c.options.MaxPreReconnectInterval))))
+	}
 
 	for {
 		if nil != c.options.OnReconnecting {
