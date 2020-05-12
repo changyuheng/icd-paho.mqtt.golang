@@ -257,7 +257,7 @@ func (c *client) Connect() Token {
 					goto RETRYCONN
 				}
 			}
-			ERROR.Println(CLI, "Failed to connect to a broker")
+			// ERROR.Println(CLI, "Failed to connect to a broker")
 			c.setConnected(disconnected)
 			c.persist.Close()
 			t.returnCode = rc
@@ -360,7 +360,7 @@ func (c *client) attemptConnection() (net.Conn, byte, bool, error) {
 		// Start by opening the network connection (tcp, tls, ws) etc
 		conn, err = openConnection(broker, c.options.TLSConfig, c.options.ConnectTimeout, c.options.HTTPHeaders, c.options.WebsocketOptions)
 		if err != nil {
-			ERROR.Println(CLI, err.Error())
+			// ERROR.Println(CLI, err.Error())
 			WARN.Println(CLI, "failed to connect to broker, trying next")
 			rc = packets.ErrNetworkError
 			continue
